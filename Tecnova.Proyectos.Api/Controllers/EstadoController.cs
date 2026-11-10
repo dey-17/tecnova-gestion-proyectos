@@ -5,12 +5,12 @@ namespace Tecnova.Proyectos.Api.Controllers
     [RoutePrefix("api/estado")]
     public class EstadoController : ApiController
     {
-        [HttpGet, Route("")]
+        [AllowAnonymous, HttpGet, Route("")]
         public IHttpActionResult Get()
         {
             return Ok(new
             {
-                servicio = "Tecnova Gestión de Proyectos",
+                servicio = "Tecnova GestiÃ³n de Proyectos",
                 disponible = true
             });
         }
