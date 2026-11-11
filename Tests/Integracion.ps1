@@ -59,11 +59,16 @@ try {
  $bad=$t.Clone();$bad.Titulo='<script>alert(1)</script>'
  $null=Call $member POST tareas $bad 400
  $created=Call $member POST tareas $t;$tid=[int]$created.Id;$t.Version=1
+ $history=Call $member GET "tareas/$tid/historial"
+ Assert (@($history).Count -eq 1 -and $history[0].Accion -eq 'Tarea creada' -and $history[0].Usuario -like "QA $run*") 'No se registró autor y creación de la tarea.'
+ $null=Call $outsider GET "tareas/$tid/historial" $null 404
  $null=Call $outsider GET "tareas/$tid" $null 404
  $null=Call $outsider PUT "tareas/$tid" $t 404
  $t.IdEstado=11;$t.IdPrioridad=1
  $null=Call $member PUT "tareas/$tid" $t
  $null=Call $member PUT "tareas/$tid" $t 409
+ $history=Call $member GET "tareas/$tid/historial"
+ Assert (@($history).Count -eq 2 -and $history[0].Detalle -match 'Pendiente → En progreso' -and $history[0].Detalle -match 'Media → Alta' -and (($history[0].Fecha -is [datetime] -and $history[0].Fecha.Kind -eq [DateTimeKind]::Utc) -or $history[0].Fecha -match 'Z$')) 'El historial no conserva cambios de estado/prioridad y fecha UTC, o registró un cambio rechazado.'
  $t.Version=2
  $other=$t.Clone();$other.Remove('Version');$other.IdAsignado=$a.Id;$other.IdEstado=10
  $otherCreated=Call $admin POST tareas $other;$otherId=[int]$otherCreated.Id;$other.Version=1
@@ -94,6 +99,8 @@ try {
  $removable=$t.Clone();$removable.IdProyecto=$emptyId;$removable.IdEstado=10
  $extra=Call $admin POST tareas $removable
  $null=Call $admin DELETE "tareas/$($extra.Id)?version=1"
+ $history=Call $admin GET "proyectos/$emptyId/historial"
+ Assert (@($history|Where-Object Accion -eq 'Tarea eliminada').Count -eq 1) 'Se perdió el evento de eliminación de la tarea.'
  $null=Call $admin DELETE "proyectos/$emptyId`?version=1"
  $update=@{Nombre="QA $run editado";Email="$prefix.externo@example.invalid";IdRol=2;Activo=$true;Version=1}
  $null=Call $admin PUT "usuarios/$outsideId" $update
@@ -130,7 +137,7 @@ try {
   try{
    foreach($id in $projectIds){
     $cmd=$connection.CreateCommand();$cmd.Transaction=$tx
-    $cmd.CommandText='IF EXISTS(SELECT 1 FROM Proyectos WHERE Id=@id AND Nombre LIKE @prefix) BEGIN DELETE Tareas WHERE IdProyecto=@id; DELETE ProyectoMiembros WHERE IdProyecto=@id; DELETE Proyectos WHERE Id=@id; END'
+    $cmd.CommandText='DELETE HistorialCambios WHERE IdProyecto=@id; IF EXISTS(SELECT 1 FROM Proyectos WHERE Id=@id AND Nombre LIKE @prefix) BEGIN DELETE Tareas WHERE IdProyecto=@id; DELETE ProyectoMiembros WHERE IdProyecto=@id; DELETE Proyectos WHERE Id=@id; END'
     [void]$cmd.Parameters.AddWithValue('@id',$id);[void]$cmd.Parameters.AddWithValue('@prefix',"QA $run%");[void]$cmd.ExecuteNonQuery();$cmd.Dispose()
    }
    foreach($id in $userIds){

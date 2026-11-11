@@ -1,6 +1,6 @@
 @model Newtonsoft.Json.Linq.JObject
 @{ Layout = null; var admin = (int)Model["IdRol"] == 1; }
-<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Tecnova · Gestión de Proyectos</title><link rel="stylesheet" href="@Url.Content("~/Content/app.css")"/></head>
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Tecnova · Gestión de Proyectos</title><link rel="stylesheet" href="@(Url.Content("~/Content/app.css") + "?v=" + System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Content/app.css")).Ticks)"/></head>
 <body data-user-id="@Model["Id"]" data-role="@Model["IdRol"]">
 <a class="skip-link" href="#contenido">Ir al contenido</a>
 <aside><a class="brand" href="#panel"><span class="monogram">T.</span><span>TECNOVA<small>GESTIÓN DE PROYECTOS</small></span></a><p class="nav-label">ESPACIO DE TRABAJO</p>
@@ -10,4 +10,5 @@
 <div id="csrf" hidden>@Html.AntiForgeryToken()</div>
 <dialog id="editor" aria-labelledby="dialog-title"><div class="dialog-top"><div><p class="eyebrow">TECNOVA</p><h2 id="dialog-title"></h2></div><button id="close-dialog" type="button" class="icon-button" aria-label="Cerrar formulario">×</button></div><form id="editor-form" novalidate><div id="editor-fields"></div><p id="form-error" class="form-error" role="alert"></p><div class="form-actions"><button type="button" id="cancel-edit" class="secondary">Cancelar</button><button type="submit" class="primary" id="save-edit">Guardar cambios →</button></div></form></dialog>
 <dialog id="confirm" aria-labelledby="confirm-title"><h2 id="confirm-title">Confirmar operación</h2><p id="confirm-text"></p><div class="form-actions"><button type="button" id="confirm-no" class="secondary">Cancelar</button><button type="button" id="confirm-yes" class="danger">Confirmar</button></div></dialog>
-<script src="@Url.Content("~/Scripts/app.js")" defer></script></body></html>
+<script src="@(Url.Content("~/Scripts/listas.js") + "?v=" + System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Scripts/listas.js")).Ticks)" defer></script>
+<script src="@(Url.Content("~/Scripts/app.js") + "?v=" + System.IO.File.GetLastWriteTimeUtc(Server.MapPath("~/Scripts/app.js")).Ticks)" defer></script></body></html>

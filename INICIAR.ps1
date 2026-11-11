@@ -15,7 +15,7 @@ foreach($p in @($PuertoWeb,$PuertoApi)){if(Get-NetTCPConnection -LocalPort $p -S
 [xml]$apiSettings=Get-Content (Join-Path $localRoot 'Tecnova.Proyectos.Api\Web.config')
 Add-Type -AssemblyName System.Data
 $database=New-Object System.Data.SqlClient.SqlConnection($apiSettings.configuration.connectionStrings.add.connectionString)
-try{$database.Open();$command=$database.CreateCommand();$command.CommandText='SELECT COUNT(*) FROM dbo.Roles';[void]$command.ExecuteScalar();$command.Dispose()}
+try{$database.Open();$command=$database.CreateCommand();$command.CommandText="IF OBJECT_ID(N'dbo.HistorialCambios',N'U') IS NULL THROW 50001, 'Ejecute CONFIGURAR.ps1 para actualizar el esquema.', 1; SELECT COUNT(*) FROM dbo.Roles";[void]$command.ExecuteScalar();$command.Dispose()}
 catch{throw 'No se pudo abrir TecnovaProyectos. Ejecute CONFIGURAR.ps1 y compruebe SQL Server y la conexión en Tecnova.Proyectos.Api/Web.config.'}
 finally{$database.Dispose()}
 $configFile=Join-Path $localRoot 'Tecnova.Proyectos.Web\Web.config'

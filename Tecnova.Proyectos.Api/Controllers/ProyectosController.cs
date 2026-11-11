@@ -49,6 +49,7 @@ namespace Tecnova.Proyectos.Api.Controllers
             using (var db = new Db(true))
             {
                 if (id != 0) Project(db, id, true);
+                var before = id == 0 ? null : History.ProjectSnapshot(db, id);
                 var previous = id == 0 ? new int[0] : db.Query("SELECT IdUsuario FROM ProyectoMiembros WHERE IdProyecto=@id", "@id", id).Select(x => (int)x["IdUsuario"]).ToArray();
                 if (db.Scalar("SELECT COUNT(*) FROM Usuarios WHERE Id=@id AND Activo=1 AND IdRol=1", "@id", responsible) == 0) Fail(400, "El responsable debe ser un administrador activo.");
                 foreach (var member in members)
@@ -67,6 +68,7 @@ namespace Tecnova.Proyectos.Api.Controllers
                     db.Execute("DELETE ProyectoMiembros WHERE IdProyecto=@p AND IdUsuario=@u", "@p", id, "@u", removed);
                 }
                 foreach (var added in members.Except(previous)) db.Execute("INSERT ProyectoMiembros VALUES(@p,@u)", "@p", id, "@u", added);
+                History.Record(db, id, null, UserId, (string)Actor["Nombre"], before == null ? "Proyecto creado" : state == 2 ? "Proyecto cerrado" : "Proyecto actualizado", before, History.ProjectSnapshot(db, id));
                 db.Commit(); return Ok(new { Id = id, mensaje = state == 2 ? "Proyecto cerrado." : "Proyecto guardado." });
             }
         }
@@ -79,9 +81,20 @@ namespace Tecnova.Proyectos.Api.Controllers
             {
                 Project(db, id, true);
                 if (db.Scalar("SELECT COUNT(*) FROM Tareas WHERE IdProyecto=@id", "@id", id) > 0) Fail(409, "Un proyecto con tareas debe conservarse. Puede cerrarlo cuando finalice el trabajo.");
+                var before = History.ProjectSnapshot(db, id);
                 db.Execute("DELETE ProyectoMiembros WHERE IdProyecto=@id", "@id", id);
                 if (db.Execute("DELETE Proyectos WHERE Id=@id AND Version=@v", "@id", id, "@v", version) == 0) Fail(409, "El proyecto cambió. Actualice la lista.");
+                History.Record(db, id, null, UserId, (string)Actor["Nombre"], "Proyecto eliminado", before, null);
                 db.Commit(); return Ok(new { mensaje = "Proyecto eliminado." });
+            }
+        }
+        [HttpGet, Route("{id:int}/historial")]
+        public IHttpActionResult Historial(int id)
+        {
+            using (var db = new Db())
+            {
+                Project(db, id);
+                return Ok(db.Query("SELECT Id,IdTarea,Usuario,Accion,Detalle,CONVERT(varchar(33),Fecha,126)+'Z' Fecha FROM HistorialCambios WHERE IdProyecto=@id ORDER BY Id DESC", "@id", id));
             }
         }
     }

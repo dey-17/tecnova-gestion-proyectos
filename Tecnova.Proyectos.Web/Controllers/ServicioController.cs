@@ -9,7 +9,7 @@ namespace Tecnova.Proyectos.Web.Controllers
     {
         private static bool Valid(string resource)
         {
-            return resource != null && Regex.IsMatch(resource, @"\A(?:catalogos|indicadores|usuarios(?:/\d+)?|proyectos(?:/\d+)?|tareas(?:/\d+)?)(?:\?(?:version|proyecto)=\d+)?\z");
+            return resource != null && Regex.IsMatch(resource, @"\A(?:catalogos|indicadores|usuarios(?:/\d+)?|proyectos(?:/\d+(?:/historial)?)?|tareas(?:/\d+(?:/historial)?)?)(?:\?(?:version|proyecto)=\d+)?\z");
         }
         private async Task<ActionResult> Relay(string recurso, string method, string payload)
         {

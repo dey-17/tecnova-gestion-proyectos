@@ -49,6 +49,7 @@ namespace Tecnova.Proyectos.Api.Controllers
             using (var db = new Db(true))
             {
                 var project = Project(db, projectId, true);
+                var before = id == 0 ? null : History.TaskSnapshot(db, id);
                 if (due < (DateTime)project["FechaInicio"] || due > (DateTime)project["FechaFinEstimada"]) Fail(400, "El vencimiento debe estar dentro de las fechas del proyecto.");
                 if (db.Scalar("SELECT COUNT(*) FROM ProyectoMiembros m JOIN Usuarios u ON u.Id=m.IdUsuario WHERE m.IdProyecto=@p AND m.IdUsuario=@u AND u.Activo=1", "@p", projectId, "@u", assigned) == 0) Fail(400, "Seleccione un integrante activo del proyecto.");
                 if (id == 0)
@@ -61,6 +62,7 @@ namespace Tecnova.Proyectos.Api.Controllers
                     if (!IsAdmin && (int)current[0]["IdAsignado"] != UserId) Fail(403, "Solo puede modificar las tareas que tiene asignadas.");
                     if (db.Execute("UPDATE Tareas SET Titulo=@t,Descripcion=@d,IdAsignado=@a,IdEstado=@s,IdPrioridad=@pr,FechaVencimiento=@f,Version=Version+1 WHERE Id=@id AND Version=@v", "@t", title, "@d", description, "@a", assigned, "@s", state, "@pr", priority, "@f", due, "@id", id, "@v", Number(input, "Version")) == 0) Fail(409, "La tarea cambió. Actualice antes de guardar.");
                 }
+                History.Record(db, projectId, id, UserId, (string)Actor["Nombre"], before == null ? "Tarea creada" : "Tarea actualizada", before, History.TaskSnapshot(db, id));
                 db.Commit(); return Ok(new { Id = id, mensaje = "Tarea guardada." });
             }
         }
@@ -74,8 +76,21 @@ namespace Tecnova.Proyectos.Api.Controllers
                 Project(db, (int)rows[0]["IdProyecto"], true);
                 if (!IsAdmin && (int)rows[0]["IdAsignado"] != UserId) Fail(403, "Solo puede eliminar tareas que tenga asignadas.");
                 if ((int)rows[0]["IdEstado"] != 10) Fail(409, "Solo se eliminan tareas pendientes. Para conservar el trabajo realizado, use Cancelada.");
+                var before = History.TaskSnapshot(db, id);
                 if (db.Execute("DELETE Tareas WHERE Id=@id AND Version=@v", "@id", id, "@v", version) == 0) Fail(409, "La tarea cambió. Actualice la lista.");
+                History.Record(db, (int)rows[0]["IdProyecto"], id, UserId, (string)Actor["Nombre"], "Tarea eliminada", before, null);
                 db.Commit(); return Ok(new { mensaje = "Tarea eliminada." });
+            }
+        }
+        [HttpGet, Route("{id:int}/historial")]
+        public IHttpActionResult Historial(int id)
+        {
+            using (var db = new Db())
+            {
+                var rows = db.Query("SELECT IdProyecto FROM Tareas WHERE Id=@id", "@id", id);
+                if (rows.Count == 0) return NotFound();
+                Project(db, (int)rows[0]["IdProyecto"]);
+                return Ok(db.Query("SELECT Id,IdTarea,Usuario,Accion,Detalle,CONVERT(varchar(33),Fecha,126)+'Z' Fecha FROM HistorialCambios WHERE IdTarea=@id ORDER BY Id DESC", "@id", id));
             }
         }
     }

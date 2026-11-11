@@ -14,7 +14,7 @@ try{
  $source=Get-Content (Join-Path (Split-Path $PSScriptRoot) 'Database/CrearBaseDatos.sql') -Raw
  $sql=$source.Replace('TecnovaProyectos',$name)
  foreach($batch in [regex]::Split($sql,'(?im)^\s*GO\s*$')){if($batch.Trim()){Execute $batch}}
- if((Scalar 'SELECT COUNT(*) FROM sys.tables') -ne 7){throw 'Se esperaban siete tablas.'}
+ if((Scalar 'SELECT COUNT(*) FROM sys.tables') -ne 8){throw 'Se esperaban ocho tablas.'}
  if((Scalar 'SELECT COUNT(*) FROM sys.foreign_keys') -ne 9){throw 'Se esperaban nueve claves foráneas.'}
  if((Scalar 'SELECT COUNT(*) FROM Usuarios') -ne 2){throw 'No se crearon las cuentas de demostración.'}
  if((Scalar 'SELECT COUNT(*) FROM Estados') -ne 6){throw 'Catálogo de estados incompleto.'}
@@ -23,7 +23,7 @@ try{
  if((Scalar "SELECT Nombre FROM Usuarios WHERE Email='usuario.demo@tecnova.local'") -ne 'Nombre conservado'){throw 'El script sobrescribió datos.'}
  if((Scalar 'SELECT COUNT(*) FROM Usuarios') -ne 2){throw 'Se duplicaron cuentas.'}
  try{Execute "INSERT Tareas(IdProyecto,Titulo,Descripcion,IdAsignado,IdEstado,IdPrioridad,FechaVencimiento) VALUES(-1,'Prueba','Prueba',-1,10,1,'2026-12-01')";throw 'Se permitió una referencia inválida.'}catch{if($_.Exception.Message -like '*Se permitió*'){throw}}
- Write-Host 'PASS: instalación limpia, siete tablas, nueve relaciones, cuentas demo e instalación repetible.'
+ Write-Host 'PASS: instalación limpia, ocho tablas, nueve relaciones, cuentas demo e instalación repetible.'
 }finally{
  if($conn.State -eq 'Open'){$conn.ChangeDatabase('master');Execute "IF DB_ID(N'$name') IS NOT NULL BEGIN ALTER DATABASE [$name] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$name]; END"}
  $conn.Dispose()

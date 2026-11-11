@@ -26,7 +26,9 @@ VS Code puede utilizarse como editor, pero sus extensiones no sustituyen MSBuild
 .\CONFIGURAR.ps1
 ```
 
-Esto ejecuta **el único script SQL**, `Database/CrearBaseDatos.sql`, y configura la conexión de la API. Crea `TecnovaProyectos`, siete tablas, nueve claves foráneas, índices, catálogos y dos cuentas de demostración. Puede repetirse sin borrar los datos. Las cuentas se insertan únicamente si `Usuarios` está vacía; repetirlo no cambia contraseñas existentes.
+Esto ejecuta **el único script SQL**, `Database/CrearBaseDatos.sql`, y configura la conexión de la API. Crea `TecnovaProyectos`, ocho tablas, nueve claves foráneas, índices, catálogos y dos cuentas de demostración. Puede repetirse sin borrar los datos. Las cuentas se insertan únicamente si `Usuarios` está vacía; repetirlo no cambia contraseñas existentes.
+
+Si ya tenía instalada una versión anterior, ejecute también `CONFIGURAR.ps1` antes de iniciar la nueva versión: agrega la tabla de historial sin eliminar usuarios, proyectos ni tareas.
 
 Como alternativa, ejecutar ese mismo archivo SQL desde SQL Server Management Studio en la instancia elegida y ajustar la conexión `TecnovaProyectos` en `Tecnova.Proyectos.Api/Web.config`.
 
@@ -95,6 +97,17 @@ La API comprueba cuenta activa, rol y participación en cada solicitud. Las cont
 
 Los formularios y confirmaciones son del sistema, sin `alert` ni `confirm` del navegador. Se utilizan etiquetas, navegación por teclado, estados de carga y avisos de error. La interfaz se adapta a pantallas pequeñas y el menú se sitúa a la izquierda en escritorio.
 
+### Guía visual, filtros e historial
+
+* Las acciones Ver, Editar y Eliminar incluyen iconos. Un botón con candado muestra en una barra del sistema por qué no está disponible; nunca omite los permisos de la API.
+* En tareas se puede combinar texto, estado, responsable, prioridad, intervalo de vencimiento y avisos de vencimiento. En proyectos se filtra por responsable y fecha estimada de fin. Limpiar filtros restablece la vista.
+* Proyectos, usuarios y listas de tareas tienen paginación de 5, 10, 25 o 50 registros. Se realiza en el navegador sobre los datos autorizados que devuelve la API. La búsqueda y los filtros se aplican antes de paginar.
+* Las tareas pendientes o en progreso indican Vencida, Vence hoy o Vence en 1–3 días, usando la fecha UTC. Las completadas y canceladas no presentan avisos de vencimiento.
+* Al guardar se consulta nuevamente la lista por Ajax, sin recargar el documento. Al crear un registro se limpian los filtros de esa lista y se muestra la página que contiene el nuevo registro, resaltándolo. Al editar se mantienen los filtros y el tamaño de página.
+* Ver una tarea muestra su historial. Historial de cambios, en el detalle de un proyecto, reúne sus modificaciones y las de sus tareas: autor, fecha/hora y valores anteriores/nuevos. La hora se guarda en UTC y se presenta en la zona del dispositivo.
+* El historial se registra en la misma transacción que el cambio. Los intentos rechazados y los guardados sin cambios efectivos no generan entradas. Empieza desde la instalación de esta mejora; no se inventan eventos de datos anteriores.
+* `HistorialCambios` conserva identificadores y nombres como instantáneas, sin claves foráneas que impidan conservar un evento después de eliminar una tarea. Un proyecto existente permite ver también sus tareas eliminadas. Si se elimina el proyecto vacío, su historial permanece en SQL para revisión administrativa, pero ya no se abre desde su detalle.
+
 ### Endpoints de la API
 
 | Método | Ruta | Operación |
@@ -110,6 +123,8 @@ Los formularios y confirmaciones son del sistema, sin `alert` ni `confirm` del n
 | GET / PUT / DELETE | `/api/proyectos/{id}` | Detalle / editar o cerrar / eliminar vacío. |
 | GET / POST | `/api/tareas` | Listar / crear. GET acepta `?proyecto={id}`. |
 | GET / PUT / DELETE | `/api/tareas/{id}` | Consultar / editar / eliminar pendiente. |
+| GET | `/api/tareas/{id}/historial` | Historial de la tarea, sujeto a acceso al proyecto. |
+| GET | `/api/proyectos/{id}/historial` | Historial del proyecto y sus tareas, sujeto a participación o rol administrador. |
 | GET | `/api/indicadores` | Indicadores según el alcance del usuario. |
 
 Las escrituras requieren `X-Tecnova-Client` y los cuerpos usan JSON. Mantener la cookie de sesión recibida en login. PUT incluye `Version` y DELETE recibe `?version={numero}`. Los scripts de integración muestran ejemplos completos. La API devuelve 400 para datos inválidos, 401 sin sesión, 403 sin permiso, 404 para recursos no disponibles y 409 para conflictos.
@@ -122,9 +137,12 @@ Con ambas aplicaciones iniciadas y las cuentas demo sin modificar:
 pwsh -NoProfile -File .\Tests\Conexion.ps1
 pwsh -NoProfile -File .\Tests\Esquema.ps1
 pwsh -NoProfile -File .\Tests\Integracion.ps1
+node .\Tests\Listas.cjs
 ```
 
 `Esquema.ps1` crea una base temporal de nombre único, comprueba tablas/relaciones/cuentas, repite la instalación y elimina únicamente esa base. `Integracion.ps1` crea usuarios, proyectos y tareas con identificadores únicos, prueba CRUD, permisos, invalidación, concurrencia, indicadores y el cliente MVC; retira sus propios registros en un bloque de limpieza. Puede aumentar la secuencia de identificadores. No elimina datos creados por el usuario.
+
+`Listas.cjs` requiere Node.js y comprueba filtros combinados, límites de paginación y vencimientos sin depender del reloj del equipo. Node.js se utiliza solo para esta prueba; no es necesario para ejecutar la aplicación.
 
 Para otros puertos, pasar `-Web http://localhost:PUERTO -Api http://localhost:PUERTO` a las pruebas de conexión/integración. Para otra instancia SQL, pasar `-Servidor` a esquema e integración.
 
@@ -152,4 +170,4 @@ Para otros puertos, pasar `-Web http://localhost:PUERTO -Api http://localhost:PU
 
 Las direcciones localhost son locales, no alojamiento público. GitHub distribuye el código; cada persona ejecuta su propia copia. Para un despliegue empresarial se requieren HTTPS, configuración de infraestructura, administración de secretos y sesiones compartidas si hay varias instancias.
 
-Esta versión no incluye adjuntos, correos, notificaciones en tiempo real, paginación en servidor ni auditoría histórica completa. Actualiza los datos al entrar en las secciones y después de operar; no transmite automáticamente cambios entre navegadores. Las pruebas funcionales no constituyen una auditoría de seguridad ni una prueba de carga.
+Esta versión no incluye adjuntos, correos, notificaciones en tiempo real ni paginación en servidor. El historial abarca proyectos y tareas, no cambios de cuentas ni intentos de acceso, y no es un registro inmutable frente a un administrador de SQL Server. Actualiza los datos al entrar en las secciones y después de operar; no transmite automáticamente cambios entre navegadores. Las pruebas funcionales no constituyen una auditoría de seguridad ni una prueba de carga.

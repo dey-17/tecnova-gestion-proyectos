@@ -19,6 +19,22 @@ BEGIN
  CREATE INDEX IX_Tareas_ProyectoEstado ON dbo.Tareas(IdProyecto,IdEstado) INCLUDE(IdAsignado,IdPrioridad,FechaVencimiento);
  CREATE INDEX IX_Tareas_AsignadoEstado ON dbo.Tareas(IdAsignado,IdEstado) INCLUDE(IdProyecto,FechaVencimiento);
 END;
+IF OBJECT_ID(N'dbo.HistorialCambios') IS NULL
+BEGIN
+ CREATE TABLE dbo.HistorialCambios(
+  Id bigint IDENTITY PRIMARY KEY,
+  IdProyecto int NOT NULL,
+  IdTarea int NULL,
+  IdUsuario int NOT NULL,
+  Usuario nvarchar(120) NOT NULL,
+  Accion nvarchar(80) NOT NULL,
+  Detalle nvarchar(max) NOT NULL,
+  Fecha datetime2 NOT NULL DEFAULT SYSUTCDATETIME()
+ );
+ -- Identificadores y nombres conservados como instantáneas, también después de eliminar una entidad.
+ CREATE INDEX IX_Historial_Proyecto ON dbo.HistorialCambios(IdProyecto,Id DESC);
+ CREATE INDEX IX_Historial_Tarea ON dbo.HistorialCambios(IdTarea,Id DESC);
+END;
 IF NOT EXISTS(SELECT 1 FROM dbo.Roles)
  INSERT dbo.Roles VALUES(1,N'Administrador',N'Gestión de usuarios y proyectos'),(2,N'Usuario',N'Colaborador de proyectos');
 IF NOT EXISTS(SELECT 1 FROM dbo.Estados)
