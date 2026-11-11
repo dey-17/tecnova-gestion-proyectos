@@ -1,0 +1,13 @@
+@{ Layout = null; }
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Iniciar sesión · Tecnova</title><link rel="stylesheet" href="@Url.Content("~/Content/app.css")"/></head>
+<body class="login-page">
+<main class="login-shell">
+ <section class="login-intro"><a class="brand" href="/"><span class="monogram">T.</span><span>TECNOVA<small>GESTIÓN DE PROYECTOS</small></span></a><div><p class="eyebrow">ESPACIO DE TRABAJO</p><h1>Proyectos claros.<br/>Equipos conectados.</h1><p>Organice el trabajo, asigne tareas y consulte el avance de su equipo desde un mismo lugar.</p></div><span class="login-foot">Plataforma interna de gestión</span></section>
+ <section class="login-form"><p class="eyebrow">BIENVENIDO A TECNOVA</p><h2>Iniciar sesión</h2><p class="muted">Ingrese con la cuenta proporcionada por su administrador.</p>
+ <form id="login-form" novalidate action="@Url.Action("Entrar", "Cuenta")" method="post">@Html.AntiForgeryToken()
+ <label for="email">Correo electrónico</label><input id="email" name="email" type="email" autocomplete="username" required maxlength="180" placeholder="nombre@empresa.com"/>
+ <label for="contrasena">Contraseña</label><div class="password-field"><input id="contrasena" name="contrasena" type="password" autocomplete="current-password" required maxlength="128"/><button type="button" class="text-button" id="mostrar-clave" aria-pressed="false">Mostrar</button></div>
+ <p id="login-error" class="form-error" role="alert">@ViewBag.Error</p><button class="primary full" type="submit">Ingresar <span aria-hidden="true">→</span></button>
+ </form><p class="login-help">¿Necesita acceso? Comuníquese con su administrador.</p></section>
+</main><script src="@Url.Content("~/Scripts/login.js")" defer></script></body></html>

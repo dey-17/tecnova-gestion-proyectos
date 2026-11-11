@@ -3,6 +3,6 @@ $ErrorActionPreference='Stop'
 $status=Invoke-RestMethod "$Api/api/estado"
 if($status.disponible -ne $true){throw 'La API no respondió correctamente.'}
 $page=Invoke-WebRequest "$Web/" -UseBasicParsing
-if($page.Content -notmatch 'API conectada'){throw 'MVC no confirmó la conexión con la API.'}
+if($page.Content -notmatch 'Iniciar sesión'){throw 'MVC no mostró el login para una visita sin sesión.'}
 if($page.Headers['X-Content-Type-Options'] -ne 'nosniff'){throw 'Falta la cabecera de seguridad.'}
-Write-Host 'PASS: API, consumo HTTP desde MVC y cabeceras.'
+Write-Host 'PASS: disponibilidad de API, página de login MVC y cabeceras.'
