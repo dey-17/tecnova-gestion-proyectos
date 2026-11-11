@@ -35,9 +35,11 @@ namespace Tecnova.Proyectos.Api.Security
         {
             var sql = context.Exception as System.Data.SqlClient.SqlException;
             var status = sql != null && (sql.Number == 2601 || sql.Number == 2627 || sql.Number == 547 || sql.Number == 1205) ? HttpStatusCode.Conflict : HttpStatusCode.InternalServerError;
+            if (context.Exception is Newtonsoft.Json.JsonException || context.Exception is ArgumentException || context.Exception is InvalidCastException || context.Exception is OverflowException)
+                status = HttpStatusCode.BadRequest;
             var id = Guid.NewGuid().ToString("N");
             System.Diagnostics.Trace.TraceError("Tecnova {0}: {1}", id, context.Exception);
-            context.Response = context.Request.CreateResponse(status, new { mensaje = status == HttpStatusCode.Conflict ? "Los datos cambiaron o tienen registros relacionados. Actualice la lista y revise la operación." : "No se pudo completar la operación. Intente nuevamente. Referencia: " + id });
+            context.Response = context.Request.CreateResponse(status, new { mensaje = status == HttpStatusCode.BadRequest ? "Revise el formato y los valores de los datos enviados." : status == HttpStatusCode.Conflict ? "Los datos cambiaron o tienen registros relacionados. Actualice la lista y revise la operación." : "No se pudo completar la operación. Intente nuevamente. Referencia: " + id });
         }
     }
 }

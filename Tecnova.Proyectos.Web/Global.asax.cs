@@ -8,6 +8,7 @@ namespace Tecnova.Proyectos.Web
     {
         protected void Application_Start()
         {
+            GlobalFilters.Filters.Add(new Filters.Errores());
             RouteTable.Routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
             RouteTable.Routes.MapRoute(
                 "Default", "{controller}/{action}/{id}",

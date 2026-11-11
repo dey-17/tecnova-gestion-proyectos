@@ -48,19 +48,19 @@ namespace Tecnova.Proyectos.Api.Controllers
             var members = array.Select(x => (int)x).Concat(new[] { responsible }).Distinct().ToArray();
             using (var db = new Db(true))
             {
+                if (id != 0) Project(db, id, true);
+                var previous = id == 0 ? new int[0] : db.Query("SELECT IdUsuario FROM ProyectoMiembros WHERE IdProyecto=@id", "@id", id).Select(x => (int)x["IdUsuario"]).ToArray();
                 if (db.Scalar("SELECT COUNT(*) FROM Usuarios WHERE Id=@id AND Activo=1 AND IdRol=1", "@id", responsible) == 0) Fail(400, "El responsable debe ser un administrador activo.");
                 foreach (var member in members)
-                    if (db.Scalar("SELECT COUNT(*) FROM Usuarios WHERE Id=@id AND Activo=1", "@id", member) == 0) Fail(400, "Todos los participantes seleccionados deben estar activos.");
+                    if (!previous.Contains(member) && db.Scalar("SELECT COUNT(*) FROM Usuarios WHERE Id=@id AND Activo=1", "@id", member) == 0) Fail(400, "Los nuevos participantes deben estar activos.");
                 if (id == 0)
                     id = db.Scalar("INSERT Proyectos(Nombre,Descripcion,FechaInicio,FechaFinEstimada,IdEstado,IdResponsable) OUTPUT INSERTED.Id VALUES(@n,@d,@s,@e,@st,@r)", "@n", name, "@d", description, "@s", start, "@e", end, "@st", state, "@r", responsible);
                 else
                 {
-                    Project(db, id, true);
                     if (state == 2 && db.Scalar("SELECT COUNT(*) FROM Tareas WHERE IdProyecto=@id AND IdEstado IN(10,11)", "@id", id) > 0) Fail(409, "Complete o cancele las tareas pendientes antes de cerrar el proyecto.");
                     if (db.Scalar("SELECT COUNT(*) FROM Tareas WHERE IdProyecto=@id AND (FechaVencimiento<@s OR FechaVencimiento>@e)", "@id", id, "@s", start, "@e", end) > 0) Fail(409, "El rango de fechas debe incluir el vencimiento de todas las tareas.");
                     if (db.Execute("UPDATE Proyectos SET Nombre=@n,Descripcion=@d,FechaInicio=@s,FechaFinEstimada=@e,IdEstado=@st,IdResponsable=@r,Version=Version+1 WHERE Id=@id AND Version=@v", "@n", name, "@d", description, "@s", start, "@e", end, "@st", state, "@r", responsible, "@id", id, "@v", Number(input, "Version")) == 0) Fail(409, "El proyecto cambió. Actualice antes de guardar.");
                 }
-                var previous = db.Query("SELECT IdUsuario FROM ProyectoMiembros WHERE IdProyecto=@id", "@id", id).Select(x => (int)x["IdUsuario"]).ToArray();
                 foreach (var removed in previous.Except(members))
                 {
                     if (db.Scalar("SELECT COUNT(*) FROM Tareas WHERE IdProyecto=@p AND IdAsignado=@u", "@p", id, "@u", removed) > 0) Fail(409, "No puede retirar a un integrante con tareas asignadas. Reasigne primero sus tareas.");

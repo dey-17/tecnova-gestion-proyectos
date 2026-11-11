@@ -32,13 +32,15 @@ namespace Tecnova.Proyectos.Api.Controllers
         protected int Number(JObject input, string key)
         {
             int value;
-            if (input == null || !int.TryParse((string)input[key], out value) || value <= 0) { Fail(400, key + ": seleccione un valor válido."); return 0; }
+            var token = input == null ? null : input[key];
+            if (token == null || (token.Type != JTokenType.Integer && token.Type != JTokenType.String) || !int.TryParse((string)token, out value) || value <= 0) { Fail(400, key + ": seleccione un valor válido."); return 0; }
             return value;
         }
         protected DateTime Date(JObject input, string key)
         {
             DateTime value;
-            if (input == null || !DateTime.TryParseExact((string)input[key], "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out value)) { Fail(400, key + ": indique una fecha válida."); return DateTime.MinValue; }
+            var token = input == null ? null : input[key];
+            if (token == null || token.Type != JTokenType.String || !DateTime.TryParseExact((string)token, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out value)) { Fail(400, key + ": indique una fecha válida."); return DateTime.MinValue; }
             return value;
         }
         protected string Password(JObject input)

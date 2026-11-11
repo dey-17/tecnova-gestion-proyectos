@@ -15,6 +15,7 @@ namespace Tecnova.Proyectos.Api
             GlobalConfiguration.Configure(config =>
             {
                 config.MapHttpAttributeRoutes();
+                config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Never;
                 config.Filters.Add(new Security.ApiSecurity());
                 config.Filters.Add(new Security.SafeErrors());
                 config.Formatters.Remove(config.Formatters.XmlFormatter);
